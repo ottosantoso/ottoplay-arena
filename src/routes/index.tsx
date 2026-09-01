@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import bannerAsset from "@/assets/otto-play-arena-banner.png.asset.json";
+import padelAsset from "@/assets/padel.png.asset.json";
+import badmintonAsset from "@/assets/badminton.png.asset.json";
+import pingpongAsset from "@/assets/pingpong.png.asset.json";
+import tennisAsset from "@/assets/tennis.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,11 +28,12 @@ export const Route = createFileRoute("/")({
 });
 
 const sports = [
-  { icon: "🎾", name: "Padel", desc: "4 pemain per lapangan" },
-  { icon: "🏸", name: "Badminton", desc: "Ganda & rotasi adil" },
-  { icon: "🏓", name: "Tenis Meja", desc: "Ronde cepat, skor instan" },
-  { icon: "🎾", name: "Tenis", desc: "Rotasi partner otomatis" },
+  { logo: padelAsset.url, name: "Padel", desc: "4 pemain per lapangan" },
+  { logo: badmintonAsset.url, name: "Badminton", desc: "Ganda & rotasi adil" },
+  { logo: pingpongAsset.url, name: "Tenis Meja", desc: "Ronde cepat, skor instan" },
+  { logo: tennisAsset.url, name: "Tenis", desc: "Rotasi partner otomatis" },
 ];
+
 
 const features = [
   { title: "Kocok Otomatis", desc: "Partner & lawan diacak tiap ronde, tetap adil buat semua." },
@@ -60,7 +65,16 @@ function Home() {
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {sports.map((s) => (
               <div key={s.name} className="arena-card-static text-center">
-                <span className="block text-4xl">{s.icon}</span>
+                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10">
+                  <img
+                    src={s.logo}
+                    alt={`Logo ${s.name}`}
+                    loading="lazy"
+                    width={512}
+                    height={512}
+                    className="h-11 w-11 object-contain drop-shadow-[0_0_12px_rgba(186,255,41,0.35)]"
+                  />
+                </span>
                 <span className="mt-3 block font-display text-lg font-bold uppercase tracking-wide">
                   {s.name}
                 </span>

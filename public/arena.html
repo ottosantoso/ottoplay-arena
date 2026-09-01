@@ -71,9 +71,39 @@
   .card + .card{ margin-top: 18px; }
   .card h2{ font-family: var(--font-display); font-size: 13px; margin: 0 0 14px; color: var(--line-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
   label{ display:block; font-size: 13px; color: var(--line-dim); margin-bottom: 6px; }
-  textarea, input[type=number]{ width: 100%; background: rgba(0,0,0,0.25); border: 1px solid rgba(241,237,248,0.14); border-radius: 10px; color: var(--line); font-family: var(--font-body); font-size: 14.5px; padding: 10px 12px; resize: vertical; }
+  textarea, input[type=number], input[type=text], input[type=password]{ width: 100%; background: rgba(0,0,0,0.25); border: 1px solid rgba(241,237,248,0.14); border-radius: 10px; color: var(--line); font-family: var(--font-body); font-size: 14.5px; padding: 10px 12px; resize: vertical; }
   textarea{ min-height: 170px; line-height: 1.65; }
   textarea:focus, input:focus{ outline: 2px solid var(--lime); outline-offset: 1px; }
+
+  /* --- Sinkron cloud UI --- */
+  #syncCard{ position: relative; overflow: hidden; border-color: rgba(186,255,41,0.18); background:
+      radial-gradient(120% 140% at 100% 0%, rgba(186,255,41,0.10), transparent 60%), var(--glass); }
+  #syncCard .sync-fields{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px){ #syncCard .sync-fields{ grid-template-columns: 1fr; } }
+  #syncCard label{ font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--line-dim); font-weight: 600; }
+  #syncCard input[type=text], #syncCard input[type=password]{
+    background: rgba(0,0,0,0.42);
+    border: 1px solid rgba(241,237,248,0.16);
+    border-radius: 12px;
+    padding: 13px 14px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  #syncCard input[type=text]::placeholder, #syncCard input[type=password]::placeholder{ letter-spacing: 0.08em; font-weight: 500; color: rgba(241,237,248,0.30); text-transform: none; }
+  #syncCard input[type=text]:focus, #syncCard input[type=password]:focus{
+    outline: none;
+    border-color: var(--lime);
+    background: rgba(186,255,41,0.06);
+    box-shadow: 0 0 0 3px rgba(186,255,41,0.16), 0 0 22px rgba(186,255,41,0.15);
+  }
+  #syncCard .btn-row{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  @media (max-width: 520px){ #syncCard .btn-row{ grid-template-columns: 1fr; } }
+  #syncCard .btn-row button{ margin-top: 0; }
+
   .field{ margin-bottom: 15px; }
   .field:last-child{ margin-bottom: 0; }
   .hint{ font-size: 12.5px; color: var(--line-dim); margin-top: 6px; }
@@ -266,13 +296,15 @@
     <div class="setup-col">
       <div class="card" id="syncCard">
         <h2>Sinkron cloud</h2>
-        <div class="field">
-          <label for="arenaCodeInput">Kode arena</label>
-          <input type="text" id="arenaCodeInput" maxlength="8" placeholder="cth. AB12CD">
-        </div>
-        <div class="field">
-          <label for="arenaPinInput">PIN (biar cuma yang tau bisa buka)</label>
-          <input type="password" id="arenaPinInput" maxlength="10" placeholder="cth. 2468">
+        <div class="sync-fields">
+          <div class="field">
+            <label for="arenaCodeInput">Kode arena</label>
+            <input type="text" id="arenaCodeInput" maxlength="8" placeholder="cth. AB12CD" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="arenaPinInput">PIN rahasia</label>
+            <input type="password" id="arenaPinInput" maxlength="10" placeholder="cth. 2468" inputmode="numeric" autocomplete="off">
+          </div>
         </div>
         <div class="btn-row">
           <button class="btn-secondary" id="newArenaBtn">Bikin Kode Baru</button>
@@ -295,7 +327,7 @@
         </div>
         <div class="field">
           <label for="playersInput" id="playersLabel">Daftar pejuang (satu nama per baris)</label>
-          <textarea id="playersInput" placeholder="Akbar&#10;Vina&#10;Bang Deni&#10;Donna&#10;Otto&#10;Diaz&#10;Yamin&#10;Faiz&#10;Hafiz&#10;Ryo"></textarea>
+          <textarea id="playersInput" placeholder="Silahkan isi nama pejuang pertandingan (cth Andi, Budi, Wati)"></textarea>
         </div>
         <div class="field">
           <label for="courtsInput">Jumlah lapangan</label>
