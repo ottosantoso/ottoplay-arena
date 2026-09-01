@@ -296,13 +296,15 @@
     <div class="setup-col">
       <div class="card" id="syncCard">
         <h2>Sinkron cloud</h2>
-        <div class="field">
-          <label for="arenaCodeInput">Kode arena</label>
-          <input type="text" id="arenaCodeInput" maxlength="8" placeholder="cth. AB12CD">
-        </div>
-        <div class="field">
-          <label for="arenaPinInput">PIN (biar cuma yang tau bisa buka)</label>
-          <input type="password" id="arenaPinInput" maxlength="10" placeholder="cth. 2468">
+        <div class="sync-fields">
+          <div class="field">
+            <label for="arenaCodeInput">Kode arena</label>
+            <input type="text" id="arenaCodeInput" maxlength="8" placeholder="cth. AB12CD" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="arenaPinInput">PIN rahasia</label>
+            <input type="password" id="arenaPinInput" maxlength="10" placeholder="cth. 2468" inputmode="numeric" autocomplete="off">
+          </div>
         </div>
         <div class="btn-row">
           <button class="btn-secondary" id="newArenaBtn">Bikin Kode Baru</button>
@@ -325,7 +327,7 @@
         </div>
         <div class="field">
           <label for="playersInput" id="playersLabel">Daftar pejuang (satu nama per baris)</label>
-          <textarea id="playersInput" placeholder="Akbar&#10;Vina&#10;Bang Deni&#10;Donna&#10;Otto&#10;Diaz&#10;Yamin&#10;Faiz&#10;Hafiz&#10;Ryo"></textarea>
+          <textarea id="playersInput" placeholder="Silahkan isi nama pejuang pertandingan (cth Andi, Budi, Wati)"></textarea>
         </div>
         <div class="field">
           <label for="courtsInput">Jumlah lapangan</label>
