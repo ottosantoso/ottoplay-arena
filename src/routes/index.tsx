@@ -1,24 +1,94 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "OTTOPLAY ARENA — Rotasi Otomatis Padel, Badminton, Tenis" },
+      {
+        name: "description",
+        content:
+          "Atur rotasi pemain otomatis untuk padel, badminton, tenis meja, dan tenis. Kocok pasangan, catat skor, dan lihat klasemen real-time.",
+      },
+      { property: "og:title", content: "OTTOPLAY ARENA — Rotasi Otomatis Olahraga Raket" },
+      {
+        property: "og:description",
+        content:
+          "Pilih cabang olahraga, kocok pasangan, dan biarkan rotasi berjalan otomatis dari ronde pertama sampai terakhir.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: Home,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+const sports = [
+  { icon: "🎾", name: "Padel", desc: "4 pemain per lapangan" },
+  { icon: "🏸", name: "Badminton", desc: "Ganda & rotasi adil" },
+  { icon: "🏓", name: "Tenis Meja", desc: "Ronde cepat, skor instan" },
+  { icon: "🎾", name: "Tenis", desc: "Rotasi partner otomatis" },
+];
+
+const features = [
+  { title: "Kocok Otomatis", desc: "Partner & lawan diacak tiap ronde, tetap adil buat semua." },
+  { title: "Skor & Klasemen", desc: "Catat skor per match, klasemen langsung terupdate." },
+  { title: "Timer Ronde", desc: "Atur durasi ronde, dapat peringatan sebelum ganti." },
+];
+
+function Home() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="arena-home min-h-screen">
+      <div className="mx-auto w-full max-w-5xl px-5 pb-20 pt-12">
+        <section className="flex flex-col items-center text-center">
+          <img
+            src="/brand-banner.png"
+            alt="OTTO PLAY ARENA"
+            className="w-full max-w-xl drop-shadow-[0_0_26px_rgba(186,255,41,0.25)]"
+          />
+          <p className="mt-8 max-w-xl text-base leading-relaxed text-arena-dim">
+            Pilih cabang olahraga, kocok pasangan, dan biarkan rotasi berjalan otomatis dari ronde
+            pertama sampai terakhir.
+          </p>
+          <a href="/arena.html" className="btn-arena mt-9">
+            Mulai Sekarang
+          </a>
+        </section>
+
+        <section className="mt-20">
+          <h2 className="text-arena-heading mb-6 text-center">Cabang Olahraga</h2>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {sports.map((s) => (
+              <a key={s.name} href="/arena.html" className="arena-card group text-center">
+                <span className="block text-4xl transition-transform group-hover:scale-110">
+                  {s.icon}
+                </span>
+                <span className="mt-3 block font-display text-lg font-bold uppercase tracking-wide">
+                  {s.name}
+                </span>
+                <span className="mt-1 block text-xs text-arena-dim">{s.desc}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-16 grid gap-4 md:grid-cols-3">
+          {features.map((f) => (
+            <div key={f.title} className="arena-card">
+              <h3 className="font-display text-base font-bold uppercase tracking-wide text-arena-lime">
+                {f.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-arena-dim">{f.desc}</p>
+            </div>
+          ))}
+        </section>
+
+        <footer className="mt-16 text-center text-xs text-arena-dim">
+          <span className="font-display uppercase tracking-wider text-arena-lime">
+            Ottoplay Arena
+          </span>{" "}
+          — mainkan strategi, biarkan Otto beraksi.
+        </footer>
+      </div>
+    </main>
   );
 }
