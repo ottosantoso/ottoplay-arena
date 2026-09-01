@@ -65,7 +65,16 @@ function Home() {
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {sports.map((s) => (
               <div key={s.name} className="arena-card-static text-center">
-                <span className="block text-4xl">{s.icon}</span>
+                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10">
+                  <img
+                    src={s.logo}
+                    alt={`Logo ${s.name}`}
+                    loading="lazy"
+                    width={512}
+                    height={512}
+                    className="h-11 w-11 object-contain drop-shadow-[0_0_12px_rgba(186,255,41,0.35)]"
+                  />
+                </span>
                 <span className="mt-3 block font-display text-lg font-bold uppercase tracking-wide">
                   {s.name}
                 </span>
