@@ -28,11 +28,12 @@ export const Route = createFileRoute("/")({
 });
 
 const sports = [
-  { icon: "🎾", name: "Padel", desc: "4 pemain per lapangan" },
-  { icon: "🏸", name: "Badminton", desc: "Ganda & rotasi adil" },
-  { icon: "🏓", name: "Tenis Meja", desc: "Ronde cepat, skor instan" },
-  { icon: "🎾", name: "Tenis", desc: "Rotasi partner otomatis" },
+  { logo: padelAsset.url, name: "Padel", desc: "4 pemain per lapangan" },
+  { logo: badmintonAsset.url, name: "Badminton", desc: "Ganda & rotasi adil" },
+  { logo: pingpongAsset.url, name: "Tenis Meja", desc: "Ronde cepat, skor instan" },
+  { logo: tennisAsset.url, name: "Tenis", desc: "Rotasi partner otomatis" },
 ];
+
 
 const features = [
   { title: "Kocok Otomatis", desc: "Partner & lawan diacak tiap ronde, tetap adil buat semua." },
