@@ -142,3 +142,72 @@
     color: var(--color-foreground);
   }
 }
+
+/* ===== OTTOPLAY ARENA home screen theme ===== */
+@theme inline {
+  --color-arena-lime: var(--arena-lime);
+  --color-arena-dim: var(--arena-dim);
+  --font-display: "Chakra Petch", sans-serif;
+}
+
+:root {
+  --arena-bg: oklch(0.13 0.05 300);
+  --arena-lime: oklch(0.92 0.24 122);
+  --arena-dim: oklch(0.72 0.04 295);
+  --arena-glass: oklch(1 0 0 / 5%);
+}
+
+@utility arena-home {
+  background:
+    radial-gradient(ellipse 620px 420px at 6% -8%, oklch(0.92 0.24 122 / 0.16), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 104% 10%, oklch(0.79 0.15 200 / 0.16), transparent 60%),
+    radial-gradient(ellipse 800px 600px at 50% 115%, oklch(0.66 0.24 5 / 0.14), transparent 60%),
+    oklch(0.08 0.03 300);
+  background-repeat: no-repeat;
+  color: oklch(0.96 0.01 300);
+  font-family: "Inter", sans-serif;
+}
+
+@utility arena-card {
+  display: block;
+  border-radius: 20px;
+  border: 1px solid oklch(0.96 0.01 300 / 0.1);
+  background: var(--arena-glass);
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+  &:hover {
+    background: oklch(1 0 0 / 8%);
+    border-color: oklch(0.92 0.24 122 / 0.4);
+    transform: translateY(-2px);
+  }
+}
+
+@utility btn-arena {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--arena-lime);
+  color: oklch(0.15 0.05 300);
+  font-family: "Chakra Petch", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1.05rem 2.6rem;
+  font-size: 1.05rem;
+  box-shadow: 0 0 40px oklch(0.92 0.24 122 / 0.35);
+  transition: all 0.2s ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 55px oklch(0.92 0.24 122 / 0.5);
+  }
+}
+
+@utility text-arena-heading {
+  font-family: "Chakra Petch", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 1.1rem;
+  color: oklch(0.96 0.01 300);
+}
