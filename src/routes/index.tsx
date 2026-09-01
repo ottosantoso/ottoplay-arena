@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import bannerAsset from "@/assets/otto-play-arena-banner.png.asset.json";
+import padelAsset from "@/assets/padel.png.asset.json";
+import badmintonAsset from "@/assets/badminton.png.asset.json";
+import pingpongAsset from "@/assets/pingpong.png.asset.json";
+import tennisAsset from "@/assets/tennis.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
