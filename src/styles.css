@@ -211,3 +211,11 @@
   font-size: 1.1rem;
   color: oklch(0.96 0.01 300);
 }
+
+@utility arena-card-static {
+  display: block;
+  border-radius: 20px;
+  border: 1px solid oklch(0.96 0.01 300 / 0.1);
+  background: var(--arena-glass);
+  padding: 1.25rem;
+}

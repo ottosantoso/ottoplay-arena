@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import bannerAsset from "@/assets/otto-play-arena-banner.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -41,7 +42,7 @@ function Home() {
       <div className="mx-auto w-full max-w-5xl px-5 pb-20 pt-12">
         <section className="flex flex-col items-center text-center">
           <img
-            src="/brand-banner.png"
+            src={bannerAsset.url}
             alt="OTTO PLAY ARENA"
             className="w-full max-w-xl drop-shadow-[0_0_26px_rgba(186,255,41,0.25)]"
           />
@@ -58,22 +59,20 @@ function Home() {
           <h2 className="text-arena-heading mb-6 text-center">Cabang Olahraga</h2>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {sports.map((s) => (
-              <a key={s.name} href="/arena.html" className="arena-card group text-center">
-                <span className="block text-4xl transition-transform group-hover:scale-110">
-                  {s.icon}
-                </span>
+              <div key={s.name} className="arena-card-static text-center">
+                <span className="block text-4xl">{s.icon}</span>
                 <span className="mt-3 block font-display text-lg font-bold uppercase tracking-wide">
                   {s.name}
                 </span>
                 <span className="mt-1 block text-xs text-arena-dim">{s.desc}</span>
-              </a>
+              </div>
             ))}
           </div>
         </section>
 
         <section className="mt-16 grid gap-4 md:grid-cols-3">
           {features.map((f) => (
-            <div key={f.title} className="arena-card">
+            <div key={f.title} className="arena-card-static">
               <h3 className="font-display text-base font-bold uppercase tracking-wide text-arena-lime">
                 {f.title}
               </h3>
