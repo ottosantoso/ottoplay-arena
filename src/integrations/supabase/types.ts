@@ -14,7 +14,106 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      arena_matches: {
+        Row: {
+          arena_code: string
+          court: number
+          created_at: string
+          id: string
+          round: number
+          score_a: number
+          score_b: number
+          team_a: string[]
+          team_b: string[]
+          updated_at: string
+        }
+        Insert: {
+          arena_code: string
+          court?: number
+          created_at?: string
+          id?: string
+          round?: number
+          score_a?: number
+          score_b?: number
+          team_a?: string[]
+          team_b?: string[]
+          updated_at?: string
+        }
+        Update: {
+          arena_code?: string
+          court?: number
+          created_at?: string
+          id?: string
+          round?: number
+          score_a?: number
+          score_b?: number
+          team_a?: string[]
+          team_b?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arena_matches_arena_code_fkey"
+            columns: ["arena_code"]
+            isOneToOne: false
+            referencedRelation: "arena_rooms"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      arena_players: {
+        Row: {
+          arena_code: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          arena_code: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          arena_code?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arena_players_arena_code_fkey"
+            columns: ["arena_code"]
+            isOneToOne: false
+            referencedRelation: "arena_rooms"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      arena_rooms: {
+        Row: {
+          code: string
+          created_at: string
+          name: string | null
+          sport: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          name?: string | null
+          sport?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          name?: string | null
+          sport?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
