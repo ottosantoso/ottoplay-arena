@@ -1440,6 +1440,7 @@
   finishBtn.addEventListener('click', async () => {
     commitScores(state.current);
     logMatchesToCloud(state.round, state.current);
+    persistRoundToDb(state.round, state.current);
     if (state.roundStartTime){
       state.roundHistory.push({ round: state.round, ms: Date.now() - state.roundStartTime });
     }
@@ -1460,6 +1461,7 @@
     if (shouldCommit){
       commitScores(state.current);
       logMatchesToCloud(state.round, state.current);
+      persistRoundToDb(state.round, state.current);
     }
     const now = Date.now();
     if (state.roundStartTime){
