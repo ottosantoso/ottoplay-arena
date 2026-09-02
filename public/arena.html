@@ -335,7 +335,9 @@
         </div>
         <div class="hint">Bagikan Kode + PIN ini ke panitia lain biar bisa dibuka dari device masing-masing, dan riwayat turnamen sebelumnya cuma bisa dilihat kalau tau keduanya.</div>
         <button class="btn-secondary" id="copyInfoBtn" style="display:none;">Salin Kode &amp; PIN</button>
+        <a class="btn-secondary" id="klasemenLink" href="/klasemen" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-top:8px;">Buka Klasemen Online</a>
         <div class="status" id="syncStatus"></div>
+
       </div>
 
       <div class="card" id="setupCard">
@@ -1051,6 +1053,62 @@
     } catch (e){ /* gagal catat history match, tidak fatal buat jalannya turnamen */ }
   }
 
+  /* --- Persist klasemen ke database Otto (biar tidak hilang saat refresh) --- */
+  const OTTO_DB_URL = 'https://c--4dfea0ad-2bd8-4626-8db6-f72c1cfb4254-prod.lovable.cloud';
+  const OTTO_DB_KEY = 'sb_publishable_MfbKnuXD7EB1yHPTL4DLNw_d3KrRPgL';
+  let ottoDb = null;
+  try {
+    if (window.supabase && window.supabase.createClient){
+      ottoDb = window.supabase.createClient(OTTO_DB_URL, OTTO_DB_KEY, { auth: { persistSession: false } });
+    }
+  } catch (e){ ottoDb = null; }
+
+  function ottoKlasemenCode(){
+    if (arenaCode) return arenaCode;
+    let c = localStorage.getItem('ottoKlasemenCode');
+    if (!c){
+      c = 'LK' + Math.random().toString(36).slice(2, 6).toUpperCase();
+      localStorage.setItem('ottoKlasemenCode', c);
+    }
+    return c;
+  }
+
+  function refreshKlasemenLink(){
+    const el = document.getElementById('klasemenLink');
+    if (el) el.href = '/klasemen?kode=' + encodeURIComponent(ottoKlasemenCode());
+  }
+
+  refreshKlasemenLink();
+
+  async function persistRoundToDb(round, matches){
+    if (!ottoDb || !state || !matches || !matches.length) return;
+    const code = ottoKlasemenCode();
+    const chip = document.getElementById('arenaSportChip');
+    try {
+      await ottoDb.from('arena_rooms').upsert({
+        code: code,
+        name: 'Arena ' + code,
+        sport: (chip && chip.textContent ? chip.textContent : 'Padel')
+      }, { onConflict: 'code' });
+
+      const players = (state.players || []).map(n => ({ arena_code: code, name: n }));
+      if (players.length) await ottoDb.from('arena_players').upsert(players, { onConflict: 'arena_code,name' });
+
+      const rows = matches.map((m, i) => ({
+        arena_code: code,
+        round: round,
+        court: i + 1,
+        team_a: m.teamA || [],
+        team_b: m.teamB || [],
+        score_a: parseInt(m.scoreA, 10) || 0,
+        score_b: parseInt(m.scoreB, 10) || 0
+      }));
+      await ottoDb.from('arena_matches').insert(rows);
+      refreshKlasemenLink();
+    } catch (e){ /* gagal simpan klasemen online, turnamen tetap jalan */ }
+  }
+
+
   async function loadMatchHistory(opts){
     opts = opts || {};
     if (!isConnected()) return;
@@ -1384,6 +1442,7 @@
   finishBtn.addEventListener('click', async () => {
     commitScores(state.current);
     logMatchesToCloud(state.round, state.current);
+    persistRoundToDb(state.round, state.current);
     if (state.roundStartTime){
       state.roundHistory.push({ round: state.round, ms: Date.now() - state.roundStartTime });
     }
@@ -1404,6 +1463,7 @@
     if (shouldCommit){
       commitScores(state.current);
       logMatchesToCloud(state.round, state.current);
+      persistRoundToDb(state.round, state.current);
     }
     const now = Date.now();
     if (state.roundStartTime){
