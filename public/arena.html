@@ -1078,6 +1078,8 @@
     if (el) el.href = '/klasemen?kode=' + encodeURIComponent(ottoKlasemenCode());
   }
 
+  refreshKlasemenLink();
+
   async function persistRoundToDb(round, matches){
     if (!ottoDb || !state || !matches || !matches.length) return;
     const code = ottoKlasemenCode();
