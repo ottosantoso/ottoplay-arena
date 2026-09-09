@@ -398,7 +398,7 @@
         </div>
         <div class="field">
           <label for="playersInput" id="playersLabel">Daftar pejuang (satu nama per baris)</label>
-          <textarea id="playersInput" placeholder="Silahkan isi nama pejuang pertandingan (cth Andi, Budi, Wati)"></textarea>
+          <textarea id="playersInput" placeholder="Andi, Budi, Wati&#10;atau satu nama per baris"></textarea>
         </div>
         <div class="field">
           <label for="courtsInput">Jumlah lapangan</label>
@@ -683,7 +683,7 @@
       modeHint.textContent = 'Partner tetap sama sepanjang turnamen — cuma lawan yang diacak tiap ronde. 1 baris = 1 pasangan, format: Nama1 & Nama2.';
     } else {
       playersLabel.textContent = 'Daftar pejuang (satu nama per baris)';
-      playersInput.placeholder = 'Akbar\nVina\nBang Deni\nDonna\nOtto\nDiaz\nYamin\nFaiz\nHafiz\nRyo';
+      playersInput.placeholder = 'Andi, Budi, Wati\natau satu nama per baris';
       modeHint.textContent = 'Tiap ronde partner diacak ulang (rotasi individu).';
     }
     playersInput.dispatchEvent(new Event('input'));
@@ -733,7 +733,7 @@
 
   function parsePlayers(raw){
     const seen = new Set();
-    return raw.split('\n').map(s => s.trim()).filter(s => s.length > 0).filter(name => {
+    return raw.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0).filter(name => {
       const key = name.toLowerCase();
       if (seen.has(key)) return false;
       seen.add(key);
