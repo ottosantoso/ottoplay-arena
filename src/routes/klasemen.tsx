@@ -158,7 +158,10 @@ function Klasemen() {
             e.preventDefault();
             const c = input.trim().toUpperCase();
             setCode(c);
-            if (c) localStorage.setItem("ottoKlasemenCode", c);
+            if (c) {
+              localStorage.setItem("ottoKlasemenCode_manual", c);
+              localStorage.setItem("ottoKlasemenCode_manual_at", String(Date.now()));
+            }
           }}
         >
           <input
