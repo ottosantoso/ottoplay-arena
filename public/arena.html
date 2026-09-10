@@ -199,6 +199,10 @@
   .team-names{ flex: 1; font-size: 14.5px; font-weight: 600; line-height: 1.5; }
   .team-names small{ display:block; font-weight: 400; color: var(--line-dim); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
   .score-input{ width: 52px; text-align: center; padding: 8px 4px; font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+  .score-value{ display:inline-flex; align-items:center; gap:4px; min-width:52px; justify-content:center; padding:8px 6px; cursor:pointer; border-radius:10px; font-family: var(--font-display); font-weight:700; font-size:18px; border-bottom:2px dotted currentColor; transition: background .15s ease, transform .15s ease; }
+  .score-value:hover, .score-value:focus-visible{ background: rgba(184,242,61,.18); transform: translateY(-1px); outline:none; }
+  .score-value .pencil{ font-size:11px; opacity:.65; }
+
   .vs-divider{ display:flex; align-items:center; gap: 8px; padding: 0 16px; color: var(--line-dim); font-size: 10.5px; font-family: var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; }
   .vs-divider::before, .vs-divider::after{ content:''; flex:1; height:1px; background: rgba(241,237,248,0.1); }
   .vs-divider .dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--lime); }
@@ -842,6 +846,13 @@
 
   function resetSession(){
     clearKlasemenCode(selectedSport);
+    arenaCode = null;
+    arenaPin = null;
+    try {
+      localStorage.removeItem('kocokArenaCode');
+      localStorage.removeItem('kocokArenaPin');
+    } catch (e) {}
+
     state = null;
 
     playersInput.disabled = false;
