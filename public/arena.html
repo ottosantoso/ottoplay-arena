@@ -1145,14 +1145,15 @@
 
   async function persistRoundToDb(round, matches){
     if (!ottoDb || !state || !matches || !matches.length) return;
-    const code = ottoKlasemenCode();
-    const chip = document.getElementById('arenaSportChip');
+    const code = ottoKlasemenCode(selectedSport);
+    const sport = selectedSport || 'padel';
     try {
       await ottoDb.from('arena_rooms').upsert({
         code: code,
         name: 'Arena ' + code,
-        sport: (chip && chip.textContent ? chip.textContent : 'Padel')
+        sport: sport
       }, { onConflict: 'code' });
+
 
       const players = (state.players || []).map(n => ({ arena_code: code, name: n }));
       if (players.length) await ottoDb.from('arena_players').upsert(players, { onConflict: 'arena_code,name' });
