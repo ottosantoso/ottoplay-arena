@@ -782,7 +782,10 @@
       roundStartTime: null, roundAlertFired: false, roundHistory: []
     };
 
+    if (!arenaCode) { newKlasemenCode(selectedSport); refreshKlasemenLink(); }
+
     playersInput.disabled = true;
+
     courtsInput.disabled = true;
     roundDurationInput.disabled = true;
     modeIndividualBtn.disabled = true;
@@ -838,7 +841,9 @@
   }
 
   function resetSession(){
+    clearKlasemenCode(selectedSport);
     state = null;
+
     playersInput.disabled = false;
     courtsInput.disabled = false;
     roundDurationInput.disabled = false;
@@ -1110,39 +1115,57 @@
     }
   } catch (e){ ottoDb = null; }
 
-  function ottoKlasemenCode(){
+  function klasemenKey(sport){ return 'ottoKlasemenCode_' + (sport || selectedSport || 'padel'); }
+
+  function newKlasemenCode(sport){
+    const key = klasemenKey(sport);
+    const c = 'LK' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    try {
+      localStorage.setItem(key, c);
+      localStorage.setItem(key + '_at', String(Date.now()));
+    } catch (e) {}
+    return c;
+  }
+
+  function clearKlasemenCode(sport){
+    const key = klasemenKey(sport);
+    try { localStorage.removeItem(key); localStorage.removeItem(key + '_at'); } catch (e) {}
+  }
+
+  function ottoKlasemenCode(sport){
     if (arenaCode) return arenaCode;
-    let c = localStorage.getItem('ottoKlasemenCode');
-    if (!c){
-      c = 'LK' + Math.random().toString(36).slice(2, 6).toUpperCase();
-      localStorage.setItem('ottoKlasemenCode', c);
-    }
+    let c = null;
+    try { c = localStorage.getItem(klasemenKey(sport)); } catch (e) {}
+    if (!c) c = newKlasemenCode(sport);
     return c;
   }
 
   function refreshKlasemenLink(){
     const el = document.getElementById('klasemenLink');
-    if (el) el.href = '/klasemen?kode=' + encodeURIComponent(ottoKlasemenCode());
+    if (el) el.href = '/klasemen?kode=' + encodeURIComponent(ottoKlasemenCode(selectedSport));
   }
+
 
   refreshKlasemenLink();
 
   async function persistRoundToDb(round, matches){
     if (!ottoDb || !state || !matches || !matches.length) return;
-    const code = ottoKlasemenCode();
-    const chip = document.getElementById('arenaSportChip');
+    const code = ottoKlasemenCode(selectedSport);
+    const sport = selectedSport || 'padel';
     try {
       await ottoDb.from('arena_rooms').upsert({
         code: code,
         name: 'Arena ' + code,
-        sport: (chip && chip.textContent ? chip.textContent : 'Padel')
+        sport: sport
       }, { onConflict: 'code' });
+
 
       const players = (state.players || []).map(n => ({ arena_code: code, name: n }));
       if (players.length) await ottoDb.from('arena_players').upsert(players, { onConflict: 'arena_code,name' });
 
       const rows = matches.map((m, i) => ({
         arena_code: code,
+        sport: sport,
         round: round,
         court: i + 1,
         team_a: m.teamA || [],
@@ -1150,6 +1173,7 @@
         score_a: parseInt(m.scoreA, 10) || 0,
         score_b: parseInt(m.scoreB, 10) || 0
       }));
+
       await ottoDb.from('arena_matches').insert(rows);
       refreshKlasemenLink();
     } catch (e){ /* gagal simpan klasemen online, turnamen tetap jalan */ }
