@@ -668,6 +668,9 @@
       selectedSport = btn.dataset.sport;
       const meta = sportMeta[selectedSport] || sportMeta.padel;
       arenaSportChip.textContent = meta.label;
+      if (typeof loadRoomCodeForCurrentSport === 'function' && !arenaCode) {
+        loadRoomCodeForCurrentSport();
+      }
       showScreen('arena');
     });
   });
@@ -849,8 +852,8 @@
     arenaCode = null;
     arenaPin = null;
     try {
-      localStorage.removeItem('kocokArenaCode');
-      localStorage.removeItem('kocokArenaPin');
+      localStorage.removeItem(roomKey('ArenaCode', selectedSport));
+      localStorage.removeItem(roomKey('ArenaPin', selectedSport));
     } catch (e) {}
 
     state = null;
@@ -1127,6 +1130,7 @@
   } catch (e){ ottoDb = null; }
 
   function klasemenKey(sport){ return 'ottoKlasemenCode_' + (sport || selectedSport || 'padel'); }
+  function roomKey(suffix, sport){ return 'kocok' + suffix + '_' + (sport || selectedSport || 'padel'); }
 
   function newKlasemenCode(sport){
     const key = klasemenKey(sport);
@@ -1308,8 +1312,8 @@
     arenaCode = code;
     arenaPin = pin;
     arenaCodeInput.value = code;
-    localStorage.setItem('kocokArenaCode', arenaCode);
-    localStorage.setItem('kocokArenaPin', arenaPin);
+    localStorage.setItem(roomKey('ArenaCode', selectedSport), arenaCode);
+    localStorage.setItem(roomKey('ArenaPin', selectedSport), arenaPin);
     copyInfoBtn.style.display = 'block';
     await loadSessionFromCloud(opts);
     await loadHistory(opts);
@@ -1333,6 +1337,20 @@
     }).catch(() => { syncStatus.textContent = text; });
   });
 
+  function loadRoomCodeForCurrentSport(){
+    const savedCode = localStorage.getItem(roomKey('ArenaCode', selectedSport));
+    const savedPin = localStorage.getItem(roomKey('ArenaPin', selectedSport));
+    if (savedCode && savedPin && sb){
+      arenaCodeInput.value = savedCode;
+      arenaPinInput.value = savedPin;
+      connectArena({ silent: true });
+    } else {
+      arenaCodeInput.value = savedCode || genSessionCode();
+      arenaPinInput.value = '';
+      if (sb) syncStatus.textContent = 'Isi PIN lalu klik Sambungkan biar data tersimpan ke cloud & bisa dibuka lagi nanti.';
+    }
+  }
+
   function initSession(){
     if (!sb){
       syncStatus.textContent = 'Koneksi cloud tidak tersedia — data hanya tersimpan di device ini.';
@@ -1340,18 +1358,13 @@
     const urlParams = new URLSearchParams(window.location.search);
     const urlCode = (urlParams.get('kode') || '').toUpperCase().trim();
     const urlPin = (urlParams.get('pin') || '').trim();
-    const savedCode = localStorage.getItem('kocokArenaCode');
-    const savedPin = localStorage.getItem('kocokArenaPin');
-    const code = urlCode || savedCode;
-    const pin = urlPin || savedPin;
 
-    if (code && pin && sb){
-      arenaCodeInput.value = code;
-      arenaPinInput.value = pin;
+    if (urlCode && urlPin && sb){
+      arenaCodeInput.value = urlCode;
+      arenaPinInput.value = urlPin;
       connectArena({ silent: true });
     } else {
-      arenaCodeInput.value = code || genSessionCode();
-      if (sb) syncStatus.textContent = 'Isi PIN lalu klik Sambungkan biar data tersimpan ke cloud & bisa dibuka lagi nanti.';
+      loadRoomCodeForCurrentSport();
     }
   }
 
