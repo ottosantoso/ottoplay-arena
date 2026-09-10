@@ -841,7 +841,9 @@
   }
 
   function resetSession(){
+    clearKlasemenCode(selectedSport);
     state = null;
+
     playersInput.disabled = false;
     courtsInput.disabled = false;
     roundDurationInput.disabled = false;
