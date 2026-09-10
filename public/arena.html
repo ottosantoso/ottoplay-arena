@@ -782,7 +782,10 @@
       roundStartTime: null, roundAlertFired: false, roundHistory: []
     };
 
+    if (!arenaCode) { newKlasemenCode(selectedSport); refreshKlasemenLink(); }
+
     playersInput.disabled = true;
+
     courtsInput.disabled = true;
     roundDurationInput.disabled = true;
     modeIndividualBtn.disabled = true;
