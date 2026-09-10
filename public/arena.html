@@ -1110,20 +1110,36 @@
     }
   } catch (e){ ottoDb = null; }
 
-  function ottoKlasemenCode(){
+  function klasemenKey(sport){ return 'ottoKlasemenCode_' + (sport || selectedSport || 'padel'); }
+
+  function newKlasemenCode(sport){
+    const key = klasemenKey(sport);
+    const c = 'LK' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    try {
+      localStorage.setItem(key, c);
+      localStorage.setItem(key + '_at', String(Date.now()));
+    } catch (e) {}
+    return c;
+  }
+
+  function clearKlasemenCode(sport){
+    const key = klasemenKey(sport);
+    try { localStorage.removeItem(key); localStorage.removeItem(key + '_at'); } catch (e) {}
+  }
+
+  function ottoKlasemenCode(sport){
     if (arenaCode) return arenaCode;
-    let c = localStorage.getItem('ottoKlasemenCode');
-    if (!c){
-      c = 'LK' + Math.random().toString(36).slice(2, 6).toUpperCase();
-      localStorage.setItem('ottoKlasemenCode', c);
-    }
+    let c = null;
+    try { c = localStorage.getItem(klasemenKey(sport)); } catch (e) {}
+    if (!c) c = newKlasemenCode(sport);
     return c;
   }
 
   function refreshKlasemenLink(){
     const el = document.getElementById('klasemenLink');
-    if (el) el.href = '/klasemen?kode=' + encodeURIComponent(ottoKlasemenCode());
+    if (el) el.href = '/klasemen?kode=' + encodeURIComponent(ottoKlasemenCode(selectedSport));
   }
+
 
   refreshKlasemenLink();
 
