@@ -1160,6 +1160,7 @@
 
       const rows = matches.map((m, i) => ({
         arena_code: code,
+        sport: sport,
         round: round,
         court: i + 1,
         team_a: m.teamA || [],
@@ -1167,6 +1168,7 @@
         score_a: parseInt(m.scoreA, 10) || 0,
         score_b: parseInt(m.scoreB, 10) || 0
       }));
+
       await ottoDb.from('arena_matches').insert(rows);
       refreshKlasemenLink();
     } catch (e){ /* gagal simpan klasemen online, turnamen tetap jalan */ }
