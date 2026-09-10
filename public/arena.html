@@ -882,6 +882,11 @@
     newPlayerField2.style.display = 'none';
     timerBar.style.display = 'none';
     timerAlert.style.display = 'none';
+
+    arenaCodeInput.value = '';
+    arenaPinInput.value = '';
+    if (typeof loadRoomCodeForCurrentSport === 'function') loadRoomCodeForCurrentSport();
+    refreshKlasemenLink();
   }
 
   // --- Timer ronde: dihitung dari waktu mulai ronde s.d. waktu simpan/lanjut ---
