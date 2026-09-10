@@ -23,6 +23,7 @@ export type Database = {
           round: number
           score_a: number
           score_b: number
+          sport: string
           team_a: string[]
           team_b: string[]
           updated_at: string
@@ -35,6 +36,7 @@ export type Database = {
           round?: number
           score_a?: number
           score_b?: number
+          sport?: string
           team_a?: string[]
           team_b?: string[]
           updated_at?: string
@@ -47,6 +49,7 @@ export type Database = {
           round?: number
           score_a?: number
           score_b?: number
+          sport?: string
           team_a?: string[]
           team_b?: string[]
           updated_at?: string
