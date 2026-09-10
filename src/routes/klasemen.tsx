@@ -76,12 +76,28 @@ function Klasemen() {
 
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get("kode");
-    const saved = fromUrl || localStorage.getItem("ottoKlasemenCode") || "";
+    let latest = "";
+    if (!fromUrl) {
+      let latestAt = -1;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key || !key.startsWith("ottoKlasemenCode_") || key.endsWith("_at")) continue;
+        const value = localStorage.getItem(key);
+        if (!value) continue;
+        const at = Number(localStorage.getItem(key + "_at") ?? 0);
+        if (at >= latestAt) {
+          latestAt = at;
+          latest = value;
+        }
+      }
+    }
+    const saved = (fromUrl || latest || "").toUpperCase();
     if (saved) {
-      setInput(saved.toUpperCase());
-      setCode(saved.toUpperCase());
+      setInput(saved);
+      setCode(saved);
     }
   }, []);
+
 
   const query = useQuery({
     queryKey: ["klasemen", code],
