@@ -42,6 +42,23 @@ type Standing = {
   wins: number;
 };
 
+type PlayerStatRow = {
+  player_name: string;
+  point_count: number;
+  out_count: number;
+  foul_count: number;
+};
+
+type PlayerReport = {
+  name: string;
+  games: number;
+  wins: number;
+  winRate: number;
+  pointCount: number;
+  outCount: number;
+  foulCount: number;
+};
+
 function buildStandings(players: string[], matches: MatchRow[]): Standing[] {
   const table = new Map<string, Standing>();
   const ensure = (name: string) => {
@@ -68,6 +85,30 @@ function buildStandings(players: string[], matches: MatchRow[]): Standing[] {
   return [...table.values()].sort(
     (a, b) => b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name),
   );
+}
+
+function buildPlayerReport(standings: Standing[], statRows: PlayerStatRow[]): PlayerReport[] {
+  const statTable = new Map<string, { point_count: number; out_count: number; foul_count: number }>();
+  statRows.forEach((row) => {
+    const cur = statTable.get(row.player_name) ?? { point_count: 0, out_count: 0, foul_count: 0 };
+    cur.point_count += row.point_count ?? 0;
+    cur.out_count += row.out_count ?? 0;
+    cur.foul_count += row.foul_count ?? 0;
+    statTable.set(row.player_name, cur);
+  });
+
+  return standings.map((s) => {
+    const stat = statTable.get(s.name) ?? { point_count: 0, out_count: 0, foul_count: 0 };
+    return {
+      name: s.name,
+      games: s.games,
+      wins: s.wins,
+      winRate: s.games > 0 ? (s.wins / s.games) * 100 : 0,
+      pointCount: stat.point_count,
+      outCount: stat.out_count,
+      foulCount: stat.foul_count,
+    };
+  });
 }
 
 function Klasemen() {
@@ -104,7 +145,7 @@ function Klasemen() {
     enabled: !!code,
     refetchInterval: 15000,
     queryFn: async () => {
-      const [playersRes, matchesRes] = await Promise.all([
+      const [playersRes, matchesRes, statsRes] = await Promise.all([
         supabase.from("arena_players").select("name").eq("arena_code", code),
         supabase
           .from("arena_matches")
@@ -112,12 +153,19 @@ function Klasemen() {
           .eq("arena_code", code)
           .order("round", { ascending: true })
           .order("court", { ascending: true }),
+        supabase
+          .from("arena_player_stats")
+          .select("player_name, point_count, out_count, foul_count")
+          .eq("arena_code", code),
       ]);
       if (playersRes.error) throw playersRes.error;
       if (matchesRes.error) throw matchesRes.error;
+      if (statsRes.error) throw statsRes.error;
       const players = (playersRes.data ?? []).map((p) => p.name);
       const matches = (matchesRes.data ?? []) as MatchRow[];
-      return { players, matches, standings: buildStandings(players, matches) };
+      const statRows = (statsRes.data ?? []) as PlayerStatRow[];
+      const standings = buildStandings(players, matches);
+      return { players, matches, standings, playerReport: buildPlayerReport(standings, statRows) };
     },
   });
 
@@ -251,6 +299,47 @@ function Klasemen() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </section>
+
+            <section className="mt-8">
+              <h2 className="text-arena-heading mb-1">Laporan Pemain</h2>
+              <p className="mb-4 text-xs text-arena-dim">
+                Kolom Poin Individu/Out/Kesalahan hanya terisi untuk pertandingan yang dicatat pakai mode Detail.
+              </p>
+              {data.playerReport.length === 0 ? (
+                <p className="text-sm text-arena-dim">Belum ada data untuk kode ini.</p>
+              ) : (
+                <div className="arena-card-static !p-0 !overflow-hidden overflow-x-auto">
+                  <table className="arena-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Pejuang</th>
+                        <th>Main</th>
+                        <th>Menang</th>
+                        <th>Win Rate %</th>
+                        <th>Poin Individu</th>
+                        <th>Out</th>
+                        <th>Kesalahan</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.playerReport.map((p, i) => (
+                        <tr key={p.name}>
+                          <td className="font-display font-bold text-arena-lime">{i + 1}</td>
+                          <td className="font-medium">{p.name}</td>
+                          <td>{p.games}</td>
+                          <td>{p.wins}</td>
+                          <td className="font-display font-bold">{p.winRate.toFixed(0)}%</td>
+                          <td>{p.pointCount}</td>
+                          <td>{p.outCount}</td>
+                          <td>{p.foulCount}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </section>
