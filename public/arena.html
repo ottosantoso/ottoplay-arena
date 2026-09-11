@@ -1726,6 +1726,9 @@
   function buildCourtCard(idx){
     const m = state.current[idx];
     const mode = scoreModes[idx] || 'manual';
+    if (!Array.isArray(m.events)) m.events = [];
+    const events = m.events;
+    const sel = detailSel[idx] || null;
     const card = document.createElement('div');
     card.className = 'court-card';
     card.dataset.idx = String(idx);
