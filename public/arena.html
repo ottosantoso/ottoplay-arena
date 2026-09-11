@@ -1698,45 +1698,86 @@
     return { matches, sitOut };
   }
 
-  function render(){
-    roundArea.style.display = 'block';
-    finalArea.style.display = 'none';
-    roundBadge.innerHTML = '<span class="live-dot"></span>Ronde ' + String(state.round).padStart(2, '0');
-    newPlayerHint.textContent = 'Ronde berjalan saat ini: ' + state.round + '. Isi jumlah ronde yang terlewat biar pemain telat diprioritaskan main duluan saat rotasi berikutnya.';
+  const scoreModes = {};   // idx -> 'manual' | 'cepat'
+  const undoStacks = {};   // idx -> ['A','B',...]
 
-    courtsGrid.innerHTML = '';
-    state.current.forEach((m, idx) => {
-      const card = document.createElement('div');
-      card.className = 'court-card';
-      card.style.animationDelay = (idx * 0.07) + 's';
-      card.innerHTML = `
-        <div class="court-head"><span>Lapangan ${m.court}</span></div>
-        <div class="team-row a">
-          <div class="team-names">${m.teamA.join(' &amp; ')}<small>tim a</small></div>
-          <span class="score-value" tabindex="0" role="button" title="Klik untuk edit skor" data-idx="${idx}" data-team="A">${Number(m.scoreA) || 0}<span class="pencil">✏️</span></span>
-        </div>
-        <div class="vs-divider"><span class="dot"></span>vs<span class="dot"></span></div>
-        <div class="team-row b">
-          <div class="team-names">${m.teamB.join(' &amp; ')}<small>tim b</small></div>
-          <span class="score-value" tabindex="0" role="button" title="Klik untuk edit skor" data-idx="${idx}" data-team="B">${Number(m.scoreB) || 0}<span class="pencil">✏️</span></span>
-        </div>
-      `;
-      courtsGrid.appendChild(card);
+  function setCourtScore(idx, team, value){
+    const v = Math.max(0, parseInt(value, 10) || 0);
+    if (team === 'A') state.current[idx].scoreA = v;
+    else state.current[idx].scoreB = v;
+    saveSessionToCloud();
+    return v;
+  }
+
+  function rerenderCourtCard(idx){
+    const old = courtsGrid.querySelector('.court-card[data-idx="' + idx + '"]');
+    if (!old) return;
+    old.replaceWith(buildCourtCard(idx));
+  }
+
+  function buildCourtCard(idx){
+    const m = state.current[idx];
+    const mode = scoreModes[idx] || 'manual';
+    const card = document.createElement('div');
+    card.className = 'court-card';
+    card.dataset.idx = String(idx);
+    card.style.animationDelay = (idx * 0.07) + 's';
+    card.innerHTML = `
+      <div class="court-head"><span>Lapangan ${m.court}</span></div>
+      <div class="mode-switch" style="display:flex;gap:8px;margin:8px 0 10px;">
+        <button type="button" class="mode-btn ${mode === 'manual' ? 'active' : ''}" data-setmode="manual">Manual</button>
+        <button type="button" class="mode-btn ${mode === 'cepat' ? 'active' : ''}" data-setmode="cepat">Cepat</button>
+      </div>
+      <div class="team-row a">
+        <div class="team-names">${m.teamA.join(' &amp; ')}<small>tim a</small></div>
+        <span class="score-value" tabindex="0" role="button" title="Klik untuk edit skor" data-idx="${idx}" data-team="A">${Number(m.scoreA) || 0}<span class="pencil">✏️</span></span>
+      </div>
+      <div class="vs-divider"><span class="dot"></span>vs<span class="dot"></span></div>
+      <div class="team-row b">
+        <div class="team-names">${m.teamB.join(' &amp; ')}<small>tim b</small></div>
+        <span class="score-value" tabindex="0" role="button" title="Klik untuk edit skor" data-idx="${idx}" data-team="B">${Number(m.scoreB) || 0}<span class="pencil">✏️</span></span>
+      </div>
+      ${mode === 'cepat' ? `
+      <div class="quick-score" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+        <button type="button" class="mode-btn" data-plus="A" style="padding:16px 10px;font-size:13px;">+1 Tim A</button>
+        <button type="button" class="mode-btn" data-plus="B" style="padding:16px 10px;font-size:13px;">+1 Tim B</button>
+        <button type="button" class="mode-btn" data-undo="1" style="flex:0 0 100%;">Undo</button>
+      </div>` : ''}
+    `;
+
+    card.querySelectorAll('[data-setmode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        scoreModes[idx] = btn.dataset.setmode;
+        rerenderCourtCard(idx);
+      });
     });
 
-    function setScore(idx, team, value){
-      const v = Math.max(0, parseInt(value, 10) || 0);
-      if (team === 'A') state.current[idx].scoreA = v;
-      else state.current[idx].scoreB = v;
-      saveSessionToCloud();
-      return v;
+    card.querySelectorAll('[data-plus]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const team = btn.dataset.plus;
+        const cur = team === 'A' ? state.current[idx].scoreA : state.current[idx].scoreB;
+        setCourtScore(idx, team, (Number(cur) || 0) + 1);
+        (undoStacks[idx] = undoStacks[idx] || []).push(team);
+        rerenderCourtCard(idx);
+      });
+    });
+
+    const undoBtn = card.querySelector('[data-undo]');
+    if (undoBtn){
+      undoBtn.addEventListener('click', () => {
+        const stack = undoStacks[idx] || [];
+        const team = stack.pop();
+        if (!team) return;
+        const cur = team === 'A' ? state.current[idx].scoreA : state.current[idx].scoreB;
+        setCourtScore(idx, team, (Number(cur) || 0) - 1);
+        rerenderCourtCard(idx);
+      });
     }
 
-    courtsGrid.querySelectorAll('.score-value').forEach(el => {
+    card.querySelectorAll('.score-value').forEach(el => {
       const openEditor = () => {
         if (el.dataset.editing === '1') return;
         el.dataset.editing = '1';
-        const idx = parseInt(el.dataset.idx, 10);
         const team = el.dataset.team;
         const current = team === 'A' ? state.current[idx].scoreA : state.current[idx].scoreB;
         const inp = document.createElement('input');
@@ -1748,7 +1789,7 @@
         inp.focus();
         inp.select();
         const close = () => {
-          const v = setScore(idx, team, inp.value);
+          const v = setCourtScore(idx, team, inp.value);
           el.dataset.editing = '';
           el.innerHTML = v + '<span class="pencil">✏️</span>';
           inp.replaceWith(el);
@@ -1762,7 +1803,20 @@
       el.addEventListener('keydown', (ev) => {
         if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openEditor(); }
       });
+    });
 
+    return card;
+  }
+
+  function render(){
+    roundArea.style.display = 'block';
+    finalArea.style.display = 'none';
+    roundBadge.innerHTML = '<span class="live-dot"></span>Ronde ' + String(state.round).padStart(2, '0');
+    newPlayerHint.textContent = 'Ronde berjalan saat ini: ' + state.round + '. Isi jumlah ronde yang terlewat biar pemain telat diprioritaskan main duluan saat rotasi berikutnya.';
+
+    courtsGrid.innerHTML = '';
+    state.current.forEach((m, idx) => {
+      courtsGrid.appendChild(buildCourtCard(idx));
     });
 
     sitoutStrip.innerHTML = '';
