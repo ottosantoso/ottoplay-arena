@@ -1735,6 +1735,7 @@
       <div class="mode-switch" style="display:flex;gap:8px;margin:8px 0 10px;">
         <button type="button" class="mode-btn ${mode === 'manual' ? 'active' : ''}" data-setmode="manual">Manual</button>
         <button type="button" class="mode-btn ${mode === 'cepat' ? 'active' : ''}" data-setmode="cepat">Cepat</button>
+        <button type="button" class="mode-btn ${mode === 'detail' ? 'active' : ''}" data-setmode="detail">Detail</button>
       </div>
       <div class="team-row a">
         <div class="team-names">${m.teamA.join(' &amp; ')}<small>tim a</small></div>
@@ -1750,6 +1751,31 @@
         <button type="button" class="mode-btn" data-plus="A" style="padding:16px 10px;font-size:13px;">+1 Tim A</button>
         <button type="button" class="mode-btn" data-plus="B" style="padding:16px 10px;font-size:13px;">+1 Tim B</button>
         <button type="button" class="mode-btn" data-undo="1" style="flex:0 0 100%;">Undo</button>
+      </div>` : ''}
+      ${mode === 'detail' ? `
+      <div class="detail-score" style="margin-top:12px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${['A','B'].map(t => (m['team' + t] || []).map((p, pi) => `
+            <button type="button" class="mode-btn ${sel && sel.team === t && sel.player === p ? 'active' : ''}" data-pick="${t}" data-pi="${pi}" style="flex:1 1 42%;">${escHtml(p)}</button>
+          `).join('')).join('')}
+        </div>
+        ${sel ? `
+        <div style="margin-top:10px;font-size:11px;color:var(--line-dim);">Aksi untuk <strong>${escHtml(sel.player)}</strong> (tim ${sel.team.toLowerCase()})</div>
+        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+          <button type="button" class="mode-btn" data-act="point" style="padding:14px 8px;">Poin</button>
+          <button type="button" class="mode-btn" data-act="out" style="padding:14px 8px;">Out</button>
+          <button type="button" class="mode-btn" data-act="foul" style="padding:14px 8px;">Kesalahan</button>
+        </div>` : `<div style="margin-top:10px;font-size:11px;color:var(--line-dim);">Pilih pemain dulu untuk mencatat aksi.</div>`}
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <button type="button" class="mode-btn" data-togglelog="1">${logOpen[idx] ? 'Sembunyikan log' : 'Lihat log'} (${events.length})</button>
+          <button type="button" class="mode-btn" data-undoevent="1">Undo terakhir</button>
+        </div>
+        ${logOpen[idx] ? `
+        <div style="margin-top:8px;max-height:150px;overflow:auto;font-size:11px;color:var(--line-dim);">
+          ${events.length ? events.slice().reverse().map(ev => `
+            <div style="padding:4px 0;border-top:1px solid rgba(241,237,248,0.08);">${escHtml(ev.player)} — ${ACTION_LABEL[ev.action] || ev.action}</div>
+          `).join('') : '<div style="padding:4px 0;">Belum ada catatan.</div>'}
+        </div>` : ''}
       </div>` : ''}
     `;
 
