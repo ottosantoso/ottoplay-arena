@@ -1811,6 +1811,56 @@
       });
     }
 
+    card.querySelectorAll('[data-pick]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const t = btn.dataset.pick;
+        const p = (state.current[idx]['team' + t] || [])[parseInt(btn.dataset.pi, 10)];
+        if (!p) return;
+        const cur = detailSel[idx];
+        detailSel[idx] = (cur && cur.team === t && cur.player === p) ? null : { team: t, player: p };
+        rerenderCourtCard(idx);
+      });
+    });
+
+    card.querySelectorAll('[data-act]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const s = detailSel[idx];
+        if (!s) return;
+        const action = btn.dataset.act;
+        const scoringTeam = action === 'point' ? s.team : (s.team === 'A' ? 'B' : 'A');
+        const cur = scoringTeam === 'A' ? state.current[idx].scoreA : state.current[idx].scoreB;
+        setCourtScore(idx, scoringTeam, (Number(cur) || 0) + 1);
+        if (!Array.isArray(state.current[idx].events)) state.current[idx].events = [];
+        state.current[idx].events.push({ player: s.player, team: s.team, action: action, ts: Date.now() });
+        saveSessionToCloud();
+        rerenderCourtCard(idx);
+      });
+    });
+
+    const toggleLogBtn = card.querySelector('[data-togglelog]');
+    if (toggleLogBtn){
+      toggleLogBtn.addEventListener('click', () => {
+        logOpen[idx] = !logOpen[idx];
+        rerenderCourtCard(idx);
+      });
+    }
+
+    const undoEventBtn = card.querySelector('[data-undoevent]');
+    if (undoEventBtn){
+      undoEventBtn.addEventListener('click', () => {
+        const evs = state.current[idx].events || [];
+        const last = evs.pop();
+        if (!last) return;
+        const scoringTeam = last.action === 'point' ? last.team : (last.team === 'A' ? 'B' : 'A');
+        const cur = scoringTeam === 'A' ? state.current[idx].scoreA : state.current[idx].scoreB;
+        setCourtScore(idx, scoringTeam, (Number(cur) || 0) - 1);
+        saveSessionToCloud();
+        rerenderCourtCard(idx);
+      });
+    }
+
+
+
     card.querySelectorAll('.score-value').forEach(el => {
       const openEditor = () => {
         if (el.dataset.editing === '1') return;
