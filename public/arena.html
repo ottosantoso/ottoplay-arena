@@ -2030,7 +2030,8 @@
       html += '</tbody></table>';
     }
 
-    html += '<button class="btn-primary" id="restartBtn" style="margin-top:22px;">Mulai Turnamen Baru</button>';
+    html += `<a class="btn-secondary" href="/klasemen?kode=${encodeURIComponent(ottoKlasemenCode(selectedSport))}" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-top:14px;">Lihat Statistik Lengkap →</a>`;
+    html += '<button class="btn-primary" id="restartBtn" style="margin-top:14px;">Mulai Turnamen Baru</button>';
 
     finalArea.innerHTML = html;
     document.getElementById('restartBtn').addEventListener('click', resetSession);
