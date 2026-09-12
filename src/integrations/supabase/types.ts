@@ -19,6 +19,7 @@ export type Database = {
           arena_code: string
           court: number
           created_at: string
+          events: Json
           id: string
           round: number
           score_a: number
@@ -32,6 +33,7 @@ export type Database = {
           arena_code: string
           court?: number
           created_at?: string
+          events?: Json
           id?: string
           round?: number
           score_a?: number
@@ -45,6 +47,7 @@ export type Database = {
           arena_code?: string
           court?: number
           created_at?: string
+          events?: Json
           id?: string
           round?: number
           score_a?: number
@@ -57,6 +60,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "arena_matches_arena_code_fkey"
+            columns: ["arena_code"]
+            isOneToOne: false
+            referencedRelation: "arena_rooms"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      arena_player_stats: {
+        Row: {
+          arena_code: string
+          created_at: string
+          foul_count: number
+          id: string
+          out_count: number
+          player_name: string
+          point_count: number
+          round: number
+          sport: string
+          updated_at: string
+        }
+        Insert: {
+          arena_code: string
+          created_at?: string
+          foul_count?: number
+          id?: string
+          out_count?: number
+          player_name: string
+          point_count?: number
+          round?: number
+          sport?: string
+          updated_at?: string
+        }
+        Update: {
+          arena_code?: string
+          created_at?: string
+          foul_count?: number
+          id?: string
+          out_count?: number
+          player_name?: string
+          point_count?: number
+          round?: number
+          sport?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arena_player_stats_arena_code_fkey"
             columns: ["arena_code"]
             isOneToOne: false
             referencedRelation: "arena_rooms"
