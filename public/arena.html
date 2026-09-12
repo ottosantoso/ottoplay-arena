@@ -1991,6 +1991,8 @@
     const champion = rows[0];
     const runners = rows.slice(1, 3);
     const rest = rows.slice(3);
+    const winRateOf = r => (r && r.games) ? Math.round(((r.wins || 0) / r.games) * 100) : 0;
+    const lossOf = r => (r && r.games) ? (r.games - (r.wins || 0)) : 0;
 
     let html = `
       <div class="final-header">
@@ -2001,7 +2003,7 @@
       <div class="champion-card">
         <div class="medal">🥇</div>
         <div class="name">${champion ? champion.name : '—'}</div>
-        <div class="meta">${champion ? champion.games : 0} game · ${champion ? (champion.wins || 0) : 0} menang</div>
+        <div class="meta">${champion ? champion.games : 0} game · ${champion ? (champion.wins || 0) : 0} menang · ${winRateOf(champion)}% win rate</div>
         <div class="points">${champion ? champion.points : 0}<small>total poin</small></div>
       </div>
     `;
@@ -2016,6 +2018,7 @@
             <div class="medal">${medalFor(i)}</div>
             <div class="name">${r.name}</div>
             <div class="points">${r.points} pts</div>
+            <div style="font-size:11px;color:var(--line-dim);margin-top:2px;">${winRateOf(r)}% win rate</div>
           </div>
         `;
       });
@@ -2023,14 +2026,15 @@
     }
 
     if (rest.length){
-      html += '<table><thead><tr><th></th><th>pemain</th><th style="text-align:right">main</th><th style="text-align:right">menang</th><th style="text-align:right">poin</th></tr></thead><tbody>';
+      html += '<table><thead><tr><th></th><th>pemain</th><th style="text-align:right">main</th><th style="text-align:right">menang</th><th style="text-align:right">kalah</th><th style="text-align:right">win rate</th><th style="text-align:right">poin</th></tr></thead><tbody>';
       rest.forEach((r, i) => {
-        html += `<tr><td class="rank">${i + 4}</td><td>${r.name}</td><td style="text-align:right;color:var(--line-dim)">${r.games}</td><td style="text-align:right;color:var(--lime)">${r.wins || 0}</td><td class="pts">${r.points}</td></tr>`;
+        html += `<tr><td class="rank">${i + 4}</td><td>${r.name}</td><td style="text-align:right;color:var(--line-dim)">${r.games}</td><td style="text-align:right;color:var(--lime)">${r.wins || 0}</td><td style="text-align:right;color:var(--line-dim)">${lossOf(r)}</td><td style="text-align:right;color:var(--line-dim)">${winRateOf(r)}%</td><td class="pts">${r.points}</td></tr>`;
       });
       html += '</tbody></table>';
     }
 
     html += `<a class="btn-secondary" href="/klasemen?kode=${encodeURIComponent(ottoKlasemenCode(selectedSport))}" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-top:14px;">Lihat Statistik Lengkap →</a>`;
+    html += `<a class="btn-secondary" href="/klasemen?kode=${encodeURIComponent(ottoKlasemenCode(selectedSport))}" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">Report Detail Pemain →</a>`;
     html += '<button class="btn-primary" id="restartBtn" style="margin-top:14px;">Mulai Turnamen Baru</button>';
 
     finalArea.innerHTML = html;
