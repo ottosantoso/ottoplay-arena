@@ -2033,8 +2033,9 @@
       html += '</tbody></table>';
     }
 
-    html += `<a class="btn-secondary" href="/klasemen?kode=${encodeURIComponent(ottoKlasemenCode(selectedSport))}" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-top:14px;">Lihat Statistik Lengkap →</a>`;
-    html += `<a class="btn-secondary" href="/detail-pemain?kode=${encodeURIComponent(ottoKlasemenCode(selectedSport))}" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">Report Detail Pemain →</a>`;
+    const linkBtnStyle = "display:block;text-align:center;text-decoration:none;box-sizing:border-box;font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:0.02em;border-radius:10px;padding:13px 16px;";
+    html += `<a class="btn-secondary" href="/klasemen?kode=${encodeURIComponent(ottoKlasemenCode(selectedSport))}" target="_blank" rel="noopener" style="${linkBtnStyle}margin-top:14px;">Lihat Statistik Lengkap →</a>`;
+    html += `<a class="btn-secondary" href="/detail-pemain?kode=${encodeURIComponent(ottoKlasemenCode(selectedSport))}" target="_blank" rel="noopener" style="${linkBtnStyle}margin-top:10px;">Report Detail Pemain →</a>`;
     html += '<button class="btn-primary" id="restartBtn" style="margin-top:14px;">Mulai Turnamen Baru</button>';
 
     finalArea.innerHTML = html;
