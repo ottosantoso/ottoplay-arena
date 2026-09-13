@@ -200,6 +200,12 @@ function DetailPemain() {
 
   const data = query.data;
 
+  const rankedStandings = data
+    ? [...data.standings].sort((a, b) => b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name))
+    : [];
+  const podium = rankedStandings.slice(0, 3);
+  const maxPodiumPoints = podium.length ? Math.max(...podium.map((p) => p.points), 1) : 1;
+
   const topPoin = data
     ? [...data.standings].sort((a, b) => b.points - a.points).slice(0, 5).map((s) => ({ name: s.name, value: s.points }))
     : [];
@@ -271,6 +277,93 @@ function DetailPemain() {
 
         {code && data && (
           <>
+            <section className="mt-10">
+              <h2 className="text-arena-heading mb-1">Podium</h2>
+              <p className="mb-4 text-xs text-arena-dim">
+                Top 3 pejuang lapangan berdasarkan total poin & win rate keseluruhan.
+              </p>
+              {podium.length === 0 ? (
+                <p className="text-sm text-arena-dim">Belum ada data.</p>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {podium.map((p, i) => {
+                    const rank = i + 1;
+                    const meta =
+                      rank === 1
+                        ? { badge: "🥇", label: "GOLD BADGE", color: SPORT_AMBER }
+                        : rank === 2
+                          ? { badge: "🥈", label: "SILVER BADGE", color: SPORT_BLUE }
+                          : { badge: "🥉", label: "BRONZE BADGE", color: SPORT_PINK };
+                    const winRate = p.games > 0 ? Math.round((p.wins / p.games) * 100) : 0;
+                    const losses = p.games - p.wins;
+                    const pointsPct = Math.min(100, Math.round((p.points / maxPodiumPoints) * 100));
+
+                    return (
+                      <div
+                        key={p.name}
+                        className="arena-card-static"
+                        style={{ boxShadow: `0 0 0 1px ${meta.color}33, 0 14px 30px -24px ${meta.color}88` }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <span className="text-2xl">{meta.badge}</span>
+                          <span
+                            className="flex h-7 w-7 items-center justify-center rounded-full font-display text-xs font-bold text-white"
+                            style={{ background: meta.color }}
+                          >
+                            {rank}
+                          </span>
+                        </div>
+                        <p className="mt-2 font-display text-lg font-bold uppercase tracking-wide text-arena-ink">
+                          {p.name}
+                        </p>
+                        <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: meta.color }}>
+                          {meta.label}
+                        </p>
+
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between text-xs text-arena-dim">
+                            <span>Points</span>
+                            <span className="font-display font-bold text-arena-ink">{p.points} pts</span>
+                          </div>
+                          <div className="mt-1 h-2 overflow-hidden rounded-full bg-arena-ink/10">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${pointsPct}%`, background: meta.color }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-2">
+                          <div className="flex items-center justify-between text-xs text-arena-dim">
+                            <span>Win Rate</span>
+                            <span className="font-display font-bold text-arena-ink">{winRate}%</span>
+                          </div>
+                          <div className="mt-1 h-2 overflow-hidden rounded-full bg-arena-ink/10">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${winRate}%`, background: meta.color }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
+                          <span className="rounded-full bg-arena-ink/5 px-2 py-1 text-arena-dim">
+                            {p.games} Game
+                          </span>
+                          <span className="rounded-full bg-arena-lime/15 px-2 py-1 text-arena-ink">
+                            {p.wins} Menang
+                          </span>
+                          <span className="rounded-full px-2 py-1" style={{ background: `${SPORT_PINK}22`, color: SPORT_PINK }}>
+                            {losses} Kalah
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
             <section className="mt-10">
               <h2 className="text-arena-heading mb-4">Top 5 Statistics</h2>
               <div className="grid gap-5 sm:grid-cols-3">
