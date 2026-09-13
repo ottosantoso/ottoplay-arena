@@ -2034,7 +2034,7 @@
     }
 
     html += `<a class="btn-secondary" href="/klasemen?kode=${encodeURIComponent(ottoKlasemenCode(selectedSport))}" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-top:14px;">Lihat Statistik Lengkap →</a>`;
-    html += `<a class="btn-secondary" href="/klasemen?kode=${encodeURIComponent(ottoKlasemenCode(selectedSport))}" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">Report Detail Pemain →</a>`;
+    html += `<a class="btn-secondary" href="/detail-pemain?kode=${encodeURIComponent(ottoKlasemenCode(selectedSport))}" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">Report Detail Pemain →</a>`;
     html += '<button class="btn-primary" id="restartBtn" style="margin-top:14px;">Mulai Turnamen Baru</button>';
 
     finalArea.innerHTML = html;
