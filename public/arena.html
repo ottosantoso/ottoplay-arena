@@ -1125,8 +1125,13 @@
   }
 
   /* --- Persist klasemen ke database Otto (biar tidak hilang saat refresh) --- */
-  const OTTO_DB_URL = 'https://c--4dfea0ad-2bd8-4626-8db6-f72c1cfb4254-prod.lovable.cloud';
-  const OTTO_DB_KEY = 'sb_publishable_MfbKnuXD7EB1yHPTL4DLNw_d3KrRPgL';
+  // #lovable-cloud (backend lama — nonaktif, disimpan buat switch balik)
+  // const OTTO_DB_URL = 'https://c--4dfea0ad-2bd8-4626-8db6-f72c1cfb4254-prod.lovable.cloud';
+  // const OTTO_DB_KEY = 'sb_publishable_MfbKnuXD7EB1yHPTL4DLNw_d3KrRPgL';
+
+  // #supabase-pribadi (aktif sekarang — project kocok-arena)
+  const OTTO_DB_URL = 'https://qibsdczvxqmbjrtmvgtj.supabase.co';
+  const OTTO_DB_KEY = 'sb_publishable_2d_oWU6vhTHduOVpKt3JtA_5MMZmbHM';
   let ottoDb = null;
   try {
     if (window.supabase && window.supabase.createClient){
