@@ -564,7 +564,7 @@
   let sb = null;
   try {
     if (window.supabase && window.supabase.createClient){
-      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storageKey: 'sb-otto-arena-session' } });
     }
   } catch (e){ console.error('Supabase init gagal:', e); }
 
@@ -849,6 +849,7 @@
 
   function resetSession(){
     clearKlasemenCode(selectedSport);
+    clearLocalSnapshot(selectedSport);
     arenaCode = null;
     arenaPin = null;
     try {
@@ -985,6 +986,7 @@
   function isConnected(){ return !!(sb && arenaCode && arenaPin); }
 
   function saveSessionToCloud(){
+    saveLocalSnapshot();
     if (!isConnected() || isApplyingRemote) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
@@ -1135,12 +1137,63 @@
   let ottoDb = null;
   try {
     if (window.supabase && window.supabase.createClient){
-      ottoDb = window.supabase.createClient(OTTO_DB_URL, OTTO_DB_KEY, { auth: { persistSession: false } });
+      ottoDb = window.supabase.createClient(OTTO_DB_URL, OTTO_DB_KEY, { auth: { persistSession: false, storageKey: 'sb-otto-klasemen' } });
     }
   } catch (e){ ottoDb = null; }
 
   function klasemenKey(sport){ return 'ottoKlasemenCode_' + (sport || selectedSport || 'padel'); }
   function roomKey(suffix, sport){ return 'kocok' + suffix + '_' + (sport || selectedSport || 'padel'); }
+
+  // --- Autosave lokal (fallback buat yang nggak connect Kode Arena+PIN) ---
+  // Progress turnamen yang sedang jalan disimpan ke localStorage device ini sendiri,
+  // biar refresh/tutup tab nggak nge-hapus semua data selama turnamen belum "Kelar".
+  function localSessionKey(sport){ return 'ottoLocalSession_' + (sport || selectedSport || 'padel'); }
+
+  function clearLocalSnapshot(sport){
+    try { localStorage.removeItem(localSessionKey(sport)); } catch (e) {}
+  }
+
+  function saveLocalSnapshot(){
+    if (!state || state.finished){ clearLocalSnapshot(selectedSport); return; }
+    try {
+      localStorage.setItem(localSessionKey(selectedSport), JSON.stringify({
+        state, mode: setupMode, sport: selectedSport, savedAt: Date.now()
+      }));
+    } catch (e) {}
+  }
+
+  function findLatestUnfinishedSnapshot(){
+    let best = null;
+    Object.keys(sportMeta).forEach(sport => {
+      let raw = null;
+      try { raw = localStorage.getItem(localSessionKey(sport)); } catch (e) {}
+      if (!raw) return;
+      let snap = null;
+      try { snap = JSON.parse(raw); } catch (e) {}
+      if (!snap || !snap.state || snap.state.finished) return;
+      if (!best || (snap.savedAt || 0) > (best.savedAt || 0)) best = snap;
+    });
+    return best;
+  }
+
+  function tryResumeLocalSnapshot(){
+    if (isConnected()) return false; // sudah dipulihkan lewat cloud, nggak perlu snapshot lokal
+    const snap = findLatestUnfinishedSnapshot();
+    if (!snap) return false;
+    const label = (sportMeta[snap.sport] && sportMeta[snap.sport].label) || snap.sport || 'turnamen';
+    const ok = window.confirm(
+      'Ada turnamen ' + label + ' ronde ' + snap.state.round + ' yang belum selesai tersimpan di device ini. Lanjutkan turnamen itu?'
+    );
+    if (!ok){ clearLocalSnapshot(snap.sport); return false; }
+    selectedSport = snap.sport;
+    const meta = sportMeta[selectedSport] || sportMeta.padel;
+    if (arenaSportChip) arenaSportChip.textContent = meta.label;
+    state = snap.state;
+    setupMode = snap.mode || state.mode || 'individual';
+    hydrateUIFromState();
+    showScreen('arena');
+    return true;
+  }
 
   function newKlasemenCode(sport){
     const key = klasemenKey(sport);
@@ -1401,6 +1454,7 @@
       connectArena({ silent: true });
     } else {
       loadRoomCodeForCurrentSport();
+      if (!isConnected()) tryResumeLocalSnapshot();
     }
   }
 
@@ -1622,112 +1676,61 @@
     });
   }
 
-  // --- MULAI BLOK ALGORITMA ROTASI ---
-
-  // 1. Menentukan Siapa yang Main & Siapa yang Istirahat (Bye)
   function chooseSitOuts(players, need){
     const excess = players.length - need;
     if (excess <= 0) return { playing: players.slice(), sitOut: [] };
-    
-    // Hitung juga jumlah main (games) sebagai faktor penentu istirahat
-    const getGames = (p) => (state.leaderboard[p] || { games: 0 }).games || 0;
-    
-    // Urutkan berdasarkan:
-    // 1. Jumlah istirahat paling sedikit (Prioritas utama)
-    // 2. Jika sama, siapa yang jumlah mainnya lebih banyak
-    // 3. Jika masih sama, baru diacak (Math.random)
-    const sorted = players.slice().sort((a, b) => {
-      const sitDiff = (state.sitOutCount[a] || 0) - (state.sitOutCount[b] || 0);
-      if (sitDiff !== 0) return sitDiff;
-      
-      const gamesDiff = getGames(b) - getGames(a);
-      if (gamesDiff !== 0) return gamesDiff;
-      
-      return Math.random() - 0.5;
-    });
-
-    // Yang berada di urutan teratas (paling sedikit istirahat, paling sering main) = Disuruh istirahat
-    const sitOut = sorted.slice(0, excess);
+    const shuffled = players.slice().sort(() => Math.random() - 0.5);
+    shuffled.sort((a, b) => state.sitOutCount[a] - state.sitOutCount[b]);
+    const sitOut = shuffled.slice(0, excess);
     const playing = players.filter(p => !sitOut.includes(p));
-    
     return { playing, sitOut };
   }
-  
-  // 2. Kalkulasi "Harga" Penalti jika mempertemukan pemain yang sama
-  function pairCost(a, b, weightMap){ 
-    return weightMap[pairKey(a, b)] || 0; 
-  }
 
-  // 3. Mengevaluasi Kombinasi 1 Lapangan (4 Orang)
+  function pairCost(a, b, weightMap){ return weightMap[pairKey(a, b)] || 0; }
+
   function bestPairingForChunk(chunk){
     const [p0, p1, p2, p3] = chunk;
     const options = [
-      { teamA: [p0, p1], teamB: [p2, p3] }, // Opsi 1
-      { teamA: [p0, p2], teamB: [p1, p3] }, // Opsi 2
-      { teamA: [p0, p3], teamB: [p1, p2] }  // Opsi 3
+      { teamA: [p0, p1], teamB: [p2, p3] },
+      { teamA: [p0, p2], teamB: [p1, p3] },
+      { teamA: [p0, p3], teamB: [p1, p2] }
     ];
-    
     let best = null, bestScore = Infinity;
-    
     options.forEach(opt => {
-      // Penalti besar (x10) jika sudah sering jadi PARTNER
-      const partnerScore = pairCost(opt.teamA[0], opt.teamA[1], state.partnerCount) + 
-                           pairCost(opt.teamB[0], opt.teamB[1], state.partnerCount);
-      
-      // Penalti sedang (x5) jika sudah sering jadi LAWAN
-      const oppScore = [opt.teamA[0], opt.teamA[1]].reduce((s, x) => 
-        s + [opt.teamB[0], opt.teamB[1]].reduce((s2, y) => s2 + pairCost(x, y, state.opponentCount), 0), 0);
-      
-      const score = (partnerScore * 10) + (oppScore * 5); // Pembobotan diperkuat
-      
-      if (score < bestScore){ 
-        bestScore = score; 
-        best = opt; 
-      }
+      const partnerScore = pairCost(opt.teamA[0], opt.teamA[1], state.partnerCount) + pairCost(opt.teamB[0], opt.teamB[1], state.partnerCount);
+      const oppScore = [opt.teamA[0], opt.teamA[1]].reduce((s, x) => s + [opt.teamB[0], opt.teamB[1]].reduce((s2, y) => s2 + pairCost(x, y, state.opponentCount), 0), 0);
+      const score = partnerScore * 10 + oppScore;
+      if (score < bestScore){ bestScore = score; best = opt; }
     });
     return { pairing: best, cost: bestScore };
   }
 
-  // 4. Generate Rotasi untuk Mode Individu (Americano)
   function generateMatches(playing, numCourts){
     let bestGrouping = null, bestTotalCost = Infinity;
-    
-    // Tingkatkan iterasi pencarian dari 400 ke 1000 untuk peluang lebih adil di jumlah pemain banyak
-    for (let t = 0; t < 1000; t++){
+    for (let t = 0; t < 400; t++){
       const shuffled = playing.slice().sort(() => Math.random() - 0.5);
       const chunks = [];
-      for (let i = 0; i < numCourts; i++) {
-        chunks.push(shuffled.slice(i * 4, i * 4 + 4));
-      }
-      
+      for (let i = 0; i < numCourts; i++) chunks.push(shuffled.slice(i * 4, i * 4 + 4));
       let totalCost = 0;
       const pairings = chunks.map(chunk => {
         const { pairing, cost } = bestPairingForChunk(chunk);
         totalCost += cost;
         return pairing;
       });
-      
-      if (totalCost < bestTotalCost){ 
-        bestTotalCost = totalCost; 
-        bestGrouping = pairings; 
-      }
-      
-      // Jika menemukan kombinasi sempurna (belum pernah partner/lawan sama sekali) -> langsung stop cari
+      if (totalCost < bestTotalCost){ bestTotalCost = totalCost; bestGrouping = pairings; }
       if (bestTotalCost === 0) break;
     }
     return bestGrouping;
   }
 
-  // 5. Generate Rotasi untuk Mode Pasangan Tetap
   function generateMatchesPairs(playingPairIds, numCourts){
     let best = null, bestCost = Infinity;
-    for (let t = 0; t < 1000; t++){
+    for (let t = 0; t < 400; t++){
       const shuffled = playingPairIds.slice().sort(() => Math.random() - 0.5);
       let cost = 0;
       const chunks = [];
       for (let i = 0; i < numCourts; i++){
         const a = shuffled[i * 2], b = shuffled[i * 2 + 1];
-        // Penalti jika pasangan A dan B sudah pernah bertemu sebagai lawan
         cost += pairCost(a, b, state.opponentCount);
         chunks.push([a, b]);
       }
@@ -1737,7 +1740,6 @@
     return best;
   }
 
-  // 6. Mengeksekusi 1 Ronde
   function generateSingleRound(){
     if (state.mode === 'pairs'){
       const numCourts = Math.min(state.courtsRequested, Math.floor(state.pairs.length / 2));
@@ -1763,24 +1765,18 @@
     const numCourts = Math.min(state.courtsRequested, Math.floor(state.players.length / 4));
     const need = numCourts * 4;
     const { playing, sitOut } = chooseSitOuts(state.players, need);
-    
-    // Tambah counter istirahat HANYA untuk pemain yang benar-benar tidak main ronde ini
-    sitOut.forEach(p => { state.sitOutCount[p] = (state.sitOutCount[p] || 0) + 1; });
+    sitOut.forEach(p => { state.sitOutCount[p] += 1; });
 
     const pairings = generateMatches(playing, numCourts);
     const matches = pairings.map((pair, idx) => {
-      // Catat History Partner
       const kA = pairKey(pair.teamA[0], pair.teamA[1]);
       state.partnerCount[kA] = (state.partnerCount[kA] || 0) + 1;
       const kB = pairKey(pair.teamB[0], pair.teamB[1]);
       state.partnerCount[kB] = (state.partnerCount[kB] || 0) + 1;
-      
-      // Catat History Lawan (Opponent)
       pair.teamA.forEach(x => pair.teamB.forEach(y => {
         const k = pairKey(x, y);
         state.opponentCount[k] = (state.opponentCount[k] || 0) + 1;
       }));
-      
       return { court: idx + 1, teamA: pair.teamA, teamB: pair.teamB, scoreA: 0, scoreB: 0 };
     });
 
