@@ -175,7 +175,7 @@ function buildNeverPartnered(players: string[], partnerships: PartnerRow[]): [st
 
 /** Head-to-head antar individu (lintas tim, sebagai lawan), bukan antar tim/pasangan. */
 function buildHeadToHead(matches: MatchRow[]): RivalryRow[] {
-  const table = new Map<string, { members: [string, string]; meetings: number; winsA: number; winsB: number }>();
+  const table = new Map<string, RivalryRow>();
   matches.forEach((m) => {
     const teamA = m.team_a ?? [];
     const teamB = m.team_b ?? [];
@@ -185,7 +185,7 @@ function buildHeadToHead(matches: MatchRow[]): RivalryRow[] {
       teamB.forEach((y) => {
         const [first, second] = [x, y].sort();
         const key = pairKey(x, y);
-        const cur = table.get(key) ?? { members: [first, second] as [string, string], meetings: 0, winsA: 0, winsB: 0 };
+        const cur = table.get(key) ?? { key, members: [first, second] as [string, string], meetings: 0, winsA: 0, winsB: 0 };
         cur.meetings += 1;
         if (aWon) {
           if (first === x) cur.winsA += 1;
