@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bar,
@@ -13,6 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import html2canvas from "html2canvas-pro";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/detail-pemain")({
@@ -135,6 +136,7 @@ function buildPartnerStats(matches: MatchRow[]): PartnerRow[] {
   const record = (members: string[], won: boolean) => {
     if (members.length !== 2) return;
     const [a, b] = members;
+    if (a === undefined || b === undefined) return;
     const key = pairKey(a, b);
     const cur = table.get(key) ?? { members: [a, b] as [string, string], games: 0, wins: 0 };
     cur.games += 1;
@@ -166,8 +168,11 @@ function buildNeverPartnered(players: string[], partnerships: PartnerRow[]): [st
   const result: [string, string][] = [];
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
-      const key = pairKey(players[i], players[j]);
-      if (!played.has(key)) result.push([players[i], players[j]]);
+      const pa = players[i];
+      const pb = players[j];
+      if (pa === undefined || pb === undefined) continue;
+      const key = pairKey(pa, pb);
+      if (!played.has(key)) result.push([pa, pb]);
     }
   }
   return result;
@@ -234,9 +239,9 @@ function buildRoundMvp(matches: MatchRow[]): { round: number; name: string; poin
       (m.team_b ?? []).forEach((p) => points.set(p, (points.get(p) ?? 0) + (m.score_b ?? 0)));
     });
   let best: { name: string; points: number } | null = null;
-  points.forEach((pts, name) => {
+  for (const [name, pts] of points) {
     if (!best || pts > best.points) best = { name, points: pts };
-  });
+  }
   return best ? { round: maxRound, name: best.name, points: best.points } : null;
 }
 
@@ -352,6 +357,30 @@ function RoundTrendChart({
 
 function DetailPemain() {
   const [code, setCode] = useState("");
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadImage = async () => {
+    if (!reportRef.current) return;
+    setIsDownloading(true);
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        backgroundColor: "#f8fafc",
+        useCORS: true,
+      });
+      const dataURL = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = dataURL;
+      link.download = `Report-Ottoplay-${code || "Arena"}.png`;
+      link.click();
+    } catch (err) {
+      console.error("Gagal membuat gambar laporan:", err);
+      window.alert("Gagal membuat gambar, coba lagi.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get("kode");
@@ -360,7 +389,10 @@ function DetailPemain() {
       let latestAt = -1;
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (!key || !key.startsWith("ottoKlasemenCode_") || key.endsWith("_at")) continue;
+        // Kode arena & kode klasemen sekarang disatukan (prefix kocokArenaCode_).
+        // Tetap cek prefix lama (ottoKlasemenCode_) juga buat kode-kode lama yang
+        // sudah kesimpen sebelum penyatuan ini — persis pola yang sama di klasemen.tsx.
+        if (!key || (!key.startsWith("kocokArenaCode_") && !key.startsWith("ottoKlasemenCode_")) || key.endsWith("_at")) continue;
         const value = localStorage.getItem(key);
         if (!value) continue;
         const at = Number(localStorage.getItem(key + "_at") ?? 0);
@@ -377,7 +409,14 @@ function DetailPemain() {
   const query = useQuery({
     queryKey: ["detail-pemain", code],
     enabled: !!code,
-    refetchInterval: 15000,
+    refetchInterval: (q) => {
+      const lastMatchAt = q.state.data?.lastMatchAt;
+      if (lastMatchAt) {
+        const elapsed = Date.now() - new Date(lastMatchAt).getTime();
+        if (elapsed > 2 * 60 * 60 * 1000) return false; // >2 jam sejak match terakhir, turnamen kemungkinan sudah kelar
+      }
+      return 15000;
+    },
     queryFn: async () => {
       const [playersRes, matchesRes, statsRes] = await Promise.all([
         supabase.from("arena_players").select("name").eq("arena_code", code),
@@ -395,7 +434,12 @@ function DetailPemain() {
       if (playersRes.error) throw playersRes.error;
       if (matchesRes.error) throw matchesRes.error;
       const players = (playersRes.data ?? []).map((p) => p.name);
-      const matches = (matchesRes.data ?? []) as MatchRow[];
+      const allMatches = (matchesRes.data ?? []) as MatchRow[];
+      // Ronde yang masih 0-0 di kedua tim itu belum beneran dimainkan (baru dibuat
+      // pas ronde mulai, skornya belum diisi) — jangan ikut dihitung di statistik
+      // apapun (podium, MVP, jumlah game, tren, dst), biar nggak nampilin ronde
+      // yang masih kosong seolah-olah sudah selesai.
+      const matches = allMatches.filter((m) => (m.score_a ?? 0) !== 0 || (m.score_b ?? 0) !== 0);
       const statRows = statsRes.error ? [] : ((statsRes.data ?? []) as PlayerStatRow[]);
 
       const standings = buildStandings(players, matches);
@@ -404,6 +448,10 @@ function DetailPemain() {
         .slice(0, 5)
         .map((s) => s.name);
       const partnerships = buildPartnerStats(matches);
+
+      const lastMatchAt = allMatches.length
+        ? allMatches.reduce((latest, m) => (m.created_at > latest ? m.created_at : latest), "")
+        : null;
 
       return {
         standings,
@@ -417,23 +465,40 @@ function DetailPemain() {
         rivalries: buildHeadToHead(matches),
         roundMvp: buildRoundMvp(matches),
         winStreaks: buildWinStreaks(players, matches),
+        lastMatchAt,
       };
     },
   });
 
   const data = query.data;
 
-  const rankedStandings = data
+  const rankedStandingsRaw = data
     ? [...data.standings].sort((a, b) => b.points - a.points || b.wins - a.wins || a.name.localeCompare(b.name))
     : [];
+  // Rank secara adil walau jumlah main tiap orang beda: pakai rata-rata poin per
+  // game, bukan total poin mentah. Supaya nggak ada yang nangkring di atas cuma
+  // modal 1-2 game menang, kasih syarat minimal main dulu (setengah dari jumlah
+  // main terbanyak, minimal 3x) sebelum ikut di-ranking berdasarkan rata-rata.
+  const maxGamesPlayed = data ? Math.max(0, ...data.standings.map((s) => s.games)) : 0;
+  const minGamesToRank = Math.max(3, Math.ceil(maxGamesPlayed / 2));
+  const eligibleForRank = rankedStandingsRaw.filter((s) => s.games >= minGamesToRank);
+  const belumCukupMain = rankedStandingsRaw.filter((s) => s.games > 0 && s.games < minGamesToRank);
+  const rankedStandings = [...eligibleForRank].sort((a, b) => {
+    const avgA = a.games > 0 ? a.points / a.games : 0;
+    const avgB = b.games > 0 ? b.points / b.games : 0;
+    return avgB - avgA || b.wins - a.wins || a.name.localeCompare(b.name);
+  });
   const podium = rankedStandings.slice(0, 3);
-  const maxPodiumPoints = podium.length ? Math.max(...podium.map((p) => p.points), 1) : 1;
+  const maxPodiumAvg = podium.length
+    ? Math.max(...podium.map((p) => (p.games > 0 ? p.points / p.games : 0)), 1)
+    : 1;
 
   const topPoin = data
     ? [...data.standings].sort((a, b) => b.points - a.points).slice(0, 5).map((s) => ({ name: s.name, value: s.points }))
     : [];
   const topWinRate = data
     ? [...data.standings]
+        .filter((s) => s.games >= minGamesToRank)
         .map((s) => ({ name: s.name, value: s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0 }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 5)
@@ -442,6 +507,13 @@ function DetailPemain() {
     ? [...data.actions]
         .map((a) => ({ name: a.name, value: a.outCount + a.foulCount }))
         .sort((a, b) => a.value - b.value)
+        .slice(0, 5)
+    : [];
+  const topAvgPointsPerGame = data
+    ? [...data.standings]
+        .filter((s) => s.games > 0)
+        .map((s) => ({ name: s.name, value: Math.round((s.points / s.games) * 10) / 10 }))
+        .sort((a, b) => b.value - a.value)
         .slice(0, 5)
     : [];
   const rankedActions = data
@@ -461,7 +533,7 @@ function DetailPemain() {
 
   return (
     <main className="arena-home court-lines min-h-screen">
-      <div className="mx-auto w-full max-w-5xl px-5 pb-20 pt-10">
+      <div ref={reportRef} className="mx-auto w-full max-w-5xl px-5 pb-20 pt-10">
         <nav className="mb-8 flex items-center justify-between">
           <Link
             to="/"
@@ -469,12 +541,21 @@ function DetailPemain() {
           >
             ← Beranda
           </Link>
-          <a
-            href={`/klasemen?kode=${encodeURIComponent(code)}`}
-            className="font-display text-xs font-bold uppercase tracking-wider text-arena-lime"
-          >
-            Lihat Klasemen
-          </a>
+          <div className="flex items-center gap-3">
+            <a
+              href={`/klasemen?kode=${encodeURIComponent(code)}`}
+              className="font-display text-xs font-bold uppercase tracking-wider text-arena-lime"
+            >
+              Lihat Klasemen
+            </a>
+            <button
+              onClick={handleDownloadImage}
+              disabled={isDownloading}
+              className="rounded-full bg-arena-lime px-4 py-2 font-display text-xs font-bold uppercase tracking-wider text-arena-ink transition hover:bg-[#a3e622] disabled:opacity-50"
+            >
+              {isDownloading ? "Memproses..." : "📸 Download Gambar"}
+            </button>
+          </div>
         </nav>
 
         <header className="text-center">
@@ -514,10 +595,16 @@ function DetailPemain() {
             <section className="mt-10">
               <h2 className="text-arena-heading mb-1">Podium</h2>
               <p className="mb-4 text-xs text-arena-dim">
-                Top 3 pejuang lapangan berdasarkan total poin & win rate keseluruhan.
+                Top 3 pejuang lapangan berdasarkan rata-rata poin per game (biar adil walau jumlah
+                main beda-beda) & win rate. Minimal main {minGamesToRank}x dulu baru masuk
+                perangkingan.
               </p>
               {podium.length === 0 ? (
-                <p className="text-sm text-arena-dim">Belum ada data.</p>
+                <p className="text-sm text-arena-dim">
+                  {rankedStandingsRaw.length === 0
+                    ? "Belum ada data."
+                    : `Belum ada yang main minimal ${minGamesToRank}x — main dulu beberapa ronde lagi buat lihat podium.`}
+                </p>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-3">
                   {podium.map((p, i) => {
@@ -530,7 +617,8 @@ function DetailPemain() {
                           : { badge: "🥉", label: "BRONZE BADGE", color: SPORT_PINK };
                     const winRate = p.games > 0 ? Math.round((p.wins / p.games) * 100) : 0;
                     const losses = p.games - p.wins;
-                    const pointsPct = Math.min(100, Math.round((p.points / maxPodiumPoints) * 100));
+                    const avgPoints = p.games > 0 ? Math.round((p.points / p.games) * 10) / 10 : 0;
+                    const avgPct = Math.min(100, Math.round((avgPoints / maxPodiumAvg) * 100));
 
                     return (
                       <div
@@ -556,13 +644,13 @@ function DetailPemain() {
 
                         <div className="mt-3">
                           <div className="flex items-center justify-between text-xs text-arena-dim">
-                            <span>Points</span>
-                            <span className="font-display font-bold text-arena-ink">{p.points} pts</span>
+                            <span>Rata-rata Poin/Game</span>
+                            <span className="font-display font-bold text-arena-ink">{avgPoints} pts</span>
                           </div>
                           <div className="mt-1 h-2 overflow-hidden rounded-full bg-arena-ink/10">
                             <div
                               className="h-full rounded-full"
-                              style={{ width: `${pointsPct}%`, background: meta.color }}
+                              style={{ width: `${avgPct}%`, background: meta.color }}
                             />
                           </div>
                         </div>
@@ -590,11 +678,20 @@ function DetailPemain() {
                           <span className="rounded-full px-2 py-1" style={{ background: `${SPORT_PINK}22`, color: SPORT_PINK }}>
                             {losses} Kalah
                           </span>
+                          <span className="rounded-full bg-arena-ink/5 px-2 py-1 text-arena-dim">
+                            {p.points} total pts
+                          </span>
                         </div>
                       </div>
                     );
                   })}
                 </div>
+              )}
+              {belumCukupMain.length > 0 && (
+                <p className="mt-3 text-xs text-arena-dim">
+                  Belum ikut di-ranking (kurang dari {minGamesToRank}x main):{" "}
+                  {belumCukupMain.map((s) => s.name).join(", ")}
+                </p>
               )}
             </section>
 
@@ -730,14 +827,18 @@ function DetailPemain() {
                 </div>
                 <div className="arena-card-static">
                   <p className="mb-2 text-xs font-bold uppercase tracking-wide text-arena-dim">
-                    Top 5 Paling Sedikit Kesalahan
+                    {data.hasActionData ? "Top 5 Paling Sedikit Kesalahan" : "Top 5 Rata-rata Poin/Game"}
                   </p>
-                  {data.hasActionData && topLowestErrors.length ? (
-                    <MiniBarChart data={topLowestErrors} dataKey="value" color={SPORT_PINK} />
+                  {data.hasActionData ? (
+                    topLowestErrors.length ? (
+                      <MiniBarChart data={topLowestErrors} dataKey="value" color={SPORT_PINK} />
+                    ) : (
+                      <p className="py-10 text-center text-xs text-arena-dim">Belum ada data.</p>
+                    )
+                  ) : topAvgPointsPerGame.length ? (
+                    <MiniBarChart data={topAvgPointsPerGame} dataKey="value" color={SPORT_PINK} />
                   ) : (
-                    <p className="py-10 text-center text-xs text-arena-dim">
-                      Belum ada data mode Detail.
-                    </p>
+                    <p className="py-10 text-center text-xs text-arena-dim">Belum ada data.</p>
                   )}
                 </div>
               </div>
@@ -751,9 +852,16 @@ function DetailPemain() {
               </p>
 
               {!data.hasActionData ? (
-                <p className="text-sm text-arena-dim">
-                  Belum ada data breakdown — mainkan pertandingan pakai mode Detail dulu.
-                </p>
+                <div className="arena-card-static text-center">
+                  <p className="text-sm text-arena-ink">
+                    Belum ada breakdown poin/out/kesalahan untuk sesi ini.
+                  </p>
+                  <p className="mt-1 text-xs text-arena-dim">
+                    Ini cuma tercatat kalau skor dimasukkan pakai mode Detail. Ranking, tren ronde,
+                    partner, dan MVP di atas tetap valid kok — itu semua dihitung dari skor akhir
+                    pertandingan, bukan dari mode Detail.
+                  </p>
+                </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
                   {rankedActions.map((a, i) => (
