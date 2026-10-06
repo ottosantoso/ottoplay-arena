@@ -31,7 +31,7 @@
    html, body{ margin:0; padding:0; background: var(--bg-2); color: var(--line); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
    body{
       background: var(--sport-wash, var(--bg-2));
-      min-height: 100vh;
+      min-height: 100dvh;
     }
    body:not(.welcome-active)::before{ content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:
       radial-gradient(circle at 8% 5%, color-mix(in srgb,var(--sport-color) 28%,transparent), transparent 25%),
@@ -54,7 +54,7 @@
 
   body.welcome-active{ background:#f7fafc; color:#172033; }
   body.welcome-active .wrap{ max-width:none; padding:0; }
-  #welcomeScreen{ position:relative; isolation:isolate; min-height:100vh; max-width:none; margin:0; padding:38px 24px 52px; overflow:hidden; text-align:left; font-family:'Manrope',sans-serif; background:
+  #welcomeScreen{ position:relative; isolation:isolate; min-height:100dvh; max-width:none; margin:0; padding:38px 24px 52px; overflow:hidden; text-align:left; font-family:'Manrope',sans-serif; background:
       linear-gradient(90deg, rgba(40,169,224,.055) 1px, transparent 1px),
       linear-gradient(rgba(40,169,224,.055) 1px, transparent 1px),
       #f7fafc; background-size:72px 72px; }
@@ -477,6 +477,7 @@
   .btn-primary, .btn-secondary, .btn-start-big{ max-width:100%; }
   .empty-state{ padding:48px 12px; overflow-wrap:anywhere; }
   .player-row, .team-row, .match-row-teams{ min-width:0; }
+  th, td{ overflow-wrap:anywhere; }
 
   @media (max-width:479px){
     .add-player-row{ flex-direction:column; }
